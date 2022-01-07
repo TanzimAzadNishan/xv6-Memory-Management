@@ -89,33 +89,3 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-
-int
-sys_getprocesssize(void)
-{
-  return myproc()->sz;
-}
-
-int
-sys_addtwonumbers(void)
-{
-  int num1;
-  int num2;
-
-  argint(0, &num1);
-  argint(1, &num2);
-
-  return num1 + num2;
-}
-
-int
-sys_addFloat(void)
-{
-  int num1;
-  int num2;
-
-  argint(0, &num1);
-  argint(1, &num2);
-
-  return num1 + num2;
-}
