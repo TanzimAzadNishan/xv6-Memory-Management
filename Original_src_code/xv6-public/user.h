@@ -23,9 +23,6 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int getprocesssize(void);
-int addtwonumbers(int, int);
-int addFloat(float, float);
 
 // ulib.c
 int stat(const char*, struct stat*);

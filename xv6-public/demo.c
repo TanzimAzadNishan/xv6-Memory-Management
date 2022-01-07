@@ -5,7 +5,7 @@
 int main(int argc, char *argv[]){
 
     // Add 2 numbers
-    if(argc < 3){
+    /*if(argc < 3){
         printf(2, "Usage: demo num1 num2\n");
         exit();
     }
@@ -31,7 +31,19 @@ int main(int argc, char *argv[]){
 
 
     printf(1, "result: %d\n", addtwonumbers(num1, num2));
-    exit();
+    exit();*/
+
+
+
+    // add 2 float numbers
+    if(argc < 3){
+        printf(2, "Usage: demo num1 num2\n");
+        exit();
+    }
+
+    float num1 = atoi(argv[1]);
+    float num2 = atoi(argv[2]);
+
 
 
     /*int fd;
