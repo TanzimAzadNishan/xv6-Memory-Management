@@ -111,11 +111,11 @@ sys_addtwonumbers(void)
 int
 sys_addFloat(void)
 {
-  int num1;
-  int num2;
+  // int num1;
+  // int num2;
 
-  argint(0, &num1);
-  argint(1, &num2);
+  // argint(0, &num1);
+  // argint(1, &num2);
 
-  return num1 + num2;
+  return 0;
 }

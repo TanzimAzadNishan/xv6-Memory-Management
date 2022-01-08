@@ -35,6 +35,46 @@ printint(int fd, int xx, int base, int sgn)
     putc(fd, buf[i]);
 }
 
+
+void
+printfloat(int fd, const char *fmt, float value)
+{
+  int c, i, state;
+
+  int beforeDecimal = (int) (value);
+  int afterDecimal = (int)(value*100 + 0.01) - beforeDecimal*100; 
+
+  state = 0;
+
+  for(i = 0; fmt[i]; i++){
+    c = fmt[i] & 0xff;
+    if(state == 0){
+      if(c == '%'){
+        state = '%';
+      } else {
+        putc(fd, c);
+      }
+    }
+    else if(state == '%'){
+      if(c == 'f'){
+        printint(fd, beforeDecimal, 10, 1);
+        putc(fd, '.');
+        if(afterDecimal<10){
+          putc(fd, '0');
+        }
+        printint(fd, afterDecimal, 10, 1);
+      }
+      else {
+        // Unknown % sequence.  Print it to draw attention.
+        putc(fd, '%');
+        putc(fd, c);
+      }
+      state = 0;
+    }
+  }
+}
+
+
 // Print to the given fd. Only understands %d, %x, %p, %s.
 void
 printf(int fd, const char *fmt, ...)
@@ -72,7 +112,7 @@ printf(int fd, const char *fmt, ...)
       } else if(c == 'c'){
         putc(fd, *ap);
         ap++;
-      } else if(c == '%'){
+      }else if(c == '%'){
         putc(fd, c);
       } else {
         // Unknown % sequence.  Print it to draw attention.
