@@ -36,15 +36,22 @@ int main(int argc, char *argv[]){
 
 
     // add 2 float numbers
-    if(argc < 3){
-        printf(2, "Usage: demo num1 num2\n");
-        exit();
-    }
+    // if(argc < 3){
+    //     printf(2, "Usage: demo num1 num2\n");
+    //     exit();
+    // }
 
-    float num1 = atoi(argv[1]);
-    float num2 = atoi(argv[2]);
+    float num1 = atof(argv[1]);
+    printfloat(1, "num1: %f\n", num1);
+    printfloat(1, "num2: %f\n", 34.89);
+    printfloat(1, "num2: %f\n", 3.289);
+    // float num2 = atof(argv[2]);
 
+    // float num1 = 12.5;
+    // int num2 = (int) num1;
+    // printf(1, "num1: %d\n", num2);
 
+    exit();
 
     /*int fd;
     int i;

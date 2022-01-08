@@ -104,3 +104,29 @@ memmove(void *vdst, const void *vsrc, int n)
     *dst++ = *src++;
   return vdst;
 }
+
+
+float
+atof(const char *s)
+{
+  float n;
+  int divisor = 10;
+  n = 0;
+
+  while('0' <= *s && *s <= '9'){
+    n = n*10 + *s++ - '0';
+    if(*s == '.'){
+      s++;
+      break;
+    }
+  }
+
+  n = n * 1.0;
+
+  while('0' <= *s && *s <= '9'){
+    n = n + ((*s++ - '0') * 1.0 / divisor);
+    divisor = divisor * 10;
+  }
+
+  return n;
+}
