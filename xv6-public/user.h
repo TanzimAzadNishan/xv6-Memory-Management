@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct multipleNum;
 
 // system calls
 int fork(void);
@@ -25,7 +26,9 @@ int sleep(int);
 int uptime(void);
 int getprocesssize(void);
 int addtwonumbers(int, int);
-int addFloat(float, float);
+int addFloat(float*, float*);
+int shutdown(void);
+int addMultiple(struct multipleNum*);
 
 // ulib.c
 int stat(const char*, struct stat*);

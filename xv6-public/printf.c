@@ -40,9 +40,17 @@ void
 printfloat(int fd, const char *fmt, float value)
 {
   int c, i, state;
+  int sign = 0;
+
+  if(value < 0){
+    sign = 1;
+    value = -value;
+  }
 
   int beforeDecimal = (int) (value);
-  int afterDecimal = (int)(value*100 + 0.01) - beforeDecimal*100; 
+  int afterDecimal;
+
+  afterDecimal = (int)(value*100 + 0.01) - beforeDecimal*100;
 
   state = 0;
 
@@ -57,11 +65,12 @@ printfloat(int fd, const char *fmt, float value)
     }
     else if(state == '%'){
       if(c == 'f'){
+        if(sign == 1){
+          putc(fd, '-');
+        }
+
         printint(fd, beforeDecimal, 10, 1);
         putc(fd, '.');
-        if(afterDecimal<10){
-          putc(fd, '0');
-        }
         printint(fd, afterDecimal, 10, 1);
       }
       else {
