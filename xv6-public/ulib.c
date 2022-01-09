@@ -85,11 +85,18 @@ int
 atoi(const char *s)
 {
   int n;
+  int sign = 1;
+
+  if (s[0] == '-')
+  {
+      sign = -1;
+      s++;
+  }
 
   n = 0;
   while('0' <= *s && *s <= '9')
     n = n*10 + *s++ - '0';
-  return n;
+  return (n * sign);
 }
 
 void*
@@ -112,6 +119,13 @@ atof(const char *s)
   float n;
   int divisor = 10;
   n = 0;
+  int sign = 1;
+
+  if (s[0] == '-')
+  {
+      sign = -1;
+      s++;
+  }
 
   while('0' <= *s && *s <= '9'){
     n = n*10 + *s++ - '0';
@@ -128,5 +142,5 @@ atof(const char *s)
     divisor = divisor * 10;
   }
 
-  return n;
+  return (sign * n);
 }

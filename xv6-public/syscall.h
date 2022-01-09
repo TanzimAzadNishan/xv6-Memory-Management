@@ -23,3 +23,5 @@
 #define SYS_getprocesssize  22
 #define SYS_addtwonumbers 23
 #define SYS_addFloat 24
+#define SYS_shutdown 25
+#define SYS_addMultiple 26

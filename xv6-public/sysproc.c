@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "stat.h"
 
 int
 sys_fork(void)
@@ -111,11 +112,36 @@ sys_addtwonumbers(void)
 int
 sys_addFloat(void)
 {
-  // int num1;
-  // int num2;
+  float* num1;
+  float* num2;
 
-  // argint(0, &num1);
-  // argint(1, &num2);
+  argptr(0, (void*)&num1, sizeof(*num1));
+  argptr(1, (void*)&num2, sizeof(*num2));
+
+  *num1 = ((*num1 * 1.0)  + (*num2 * 1.0)) * 1.0;
+
+  return 0;
+}
+
+int
+sys_shutdown(void){
+  outw(0xB004, 0x0|0x2000);
+  outw(0x604, 0x0|0x2000);
+
+  return 0;
+}
+
+int
+sys_addMultiple(void){
+  struct multipleNum* st;
+  argptr (0 , (void*)&st ,sizeof(*st));
+  float result = 0;
+
+  for(int i = 0; i < st->sz; i++){
+    result += st->numbers[i];
+  }
+
+  st->result = result;
 
   return 0;
 }
