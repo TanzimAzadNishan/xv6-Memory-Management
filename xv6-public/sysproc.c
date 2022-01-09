@@ -131,7 +131,7 @@ sys_shutdown(void){
   return 0;
 }
 
-int
+float
 sys_addMultiple(void){
   struct multipleNum* st;
   argptr (0 , (void*)&st ,sizeof(*st));
@@ -140,8 +140,55 @@ sys_addMultiple(void){
   for(int i = 0; i < st->sz; i++){
     result += st->numbers[i];
   }
+  // st->result = result;
 
-  st->result = result;
+  return result;
+}
 
-  return 0;
+char*
+sys_substr(void){
+  char *str;
+  int start_idx , len;
+
+  argint(1 , &start_idx);
+  argint(2 , &len);
+  argstr(0 , &str);
+
+  char* s = &str[0];
+
+  int k = 0;
+  for(int i = start_idx ; i < start_idx+len ; i++){
+    s[k++] = str[i];
+  }
+  s[k]='\0';
+  return s;
+}
+
+int*
+sys_sort(void){
+  struct mystat *ct;
+  argptr (0 , (void*)&ct ,sizeof(*ct));
+  int n = ct->sz;
+ 
+  int temp;
+   
+  for (int i = 0; i < n; i++)
+  {
+    for (int j = i + 1; j < n; j++)
+    {
+        if (ct->nums[i] > ct->nums[j])
+        {
+          temp = ct->nums[i];
+          ct->nums[i] = ct->nums[j];
+          ct->nums[j] = temp;
+        }
+    }
+  }
+  return ct->nums;
+}
+
+int
+sys_getreadcount(void)
+{
+  return myproc()->readid;
 }
