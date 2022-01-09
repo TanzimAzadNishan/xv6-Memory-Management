@@ -25,3 +25,6 @@
 #define SYS_addFloat 24
 #define SYS_shutdown 25
 #define SYS_addMultiple 26
+#define SYS_substr 27
+#define SYS_sort 28
+#define SYS_getreadcount 29

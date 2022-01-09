@@ -9,9 +9,8 @@ int main(int argc, char *argv[]){
     for(int i = 0; i < st->sz; i++){
         st->numbers[i] = atof(argv[i + 1]);
     }
-    
-    addMultiple(st);
-    printfloat(1, "result: %f\n", st->result);
+
+    printfloat(1, "result: %f\n", (addMultiple(st)));
 
     exit();
 }

@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 
 
     //add 2 float numbers
-    if(argc < 3){
+    /*if(argc < 3){
         printf(2, "Usage: demo num1 num2\n");
         exit();
     }
@@ -54,7 +54,16 @@ int main(int argc, char *argv[]){
     addFloat(&arg1, &arg2);
     printfloat(1, "result: %f\n", arg1);
 
+    exit();*/
+
+
+    //A1 online
+    //int temp = 0;
+    //int rc = getreadcount();
+    //temp = rc;
+    printf(1, "count: %d\n", getreadcount());
     exit();
+
 
     /*int fd;
     int i;

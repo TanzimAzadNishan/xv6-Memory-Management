@@ -13,5 +13,9 @@ struct stat {
 struct multipleNum{
   float *numbers;
   int sz;
-  float result;
+};
+
+struct mystat{
+  int *nums;
+  int sz;
 };

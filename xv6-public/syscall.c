@@ -7,6 +7,8 @@
 #include "x86.h"
 #include "syscall.h"
 
+int readcount = 0;
+
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
@@ -108,6 +110,9 @@ extern int sys_addtwonumbers(void);
 extern int sys_addFloat(void);
 extern int sys_shutdown(void);
 extern int sys_addMultiple(void);
+extern int sys_substr(void);
+extern int sys_sort(void);
+extern int sys_getreadcount(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -136,6 +141,9 @@ static int (*syscalls[])(void) = {
 [SYS_addFloat] sys_addFloat,
 [SYS_shutdown] sys_shutdown,
 [SYS_addMultiple] sys_addMultiple,
+[SYS_substr] sys_substr,
+[SYS_sort] sys_sort,
+[SYS_getreadcount] sys_getreadcount,
 };
 
 void
@@ -145,6 +153,14 @@ syscall(void)
   struct proc *curproc = myproc();
 
   num = curproc->tf->eax;
+
+  if (num==SYS_read){
+    readcount++; //my change
+  }
+  if (num==SYS_getreadcount){
+    curproc->readid = readcount; //my change
+  }
+
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
   } else {
