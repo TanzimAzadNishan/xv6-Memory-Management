@@ -186,6 +186,7 @@ UPROGS=\
 	_addMultipleNumbers\
 	_substr\
 	_sort\
+	_testb1\
 
 fs.img: mkfs README TEST $(UPROGS)
 	./mkfs fs.img README TEST $(UPROGS)
@@ -255,7 +256,7 @@ qemu-nox-gdb: fs.img xv6.img .gdbinit
 EXTRA=\
 	mkfs.c ulib.c user.h cat.c echo.c forktest.c grep.c kill.c demo.c shutdown.c addMultipleNumbers.c substr.c sort.c\
 	ln.c ls.c mkdir.c rm.c stressfs.c usertests.c wc.c zombie.c\
-	printf.c umalloc.c\
+	printf.c umalloc.c testb1.c\
 	README TEST dot-bochsrc *.pl toc.* runoff runoff1 runoff.list\
 	.gdbinit.tmpl gdbutil\
 
