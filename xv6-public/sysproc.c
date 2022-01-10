@@ -190,5 +190,57 @@ sys_sort(void){
 int
 sys_getreadcount(void)
 {
+  cprintf("in sys: %d\n", myproc()->readid);
   return myproc()->readid;
 }
+
+int
+sys_mult(void){
+  int num1;
+  int num2;
+
+  argint(0, &num1);
+  argint(1, &num2);
+
+  return num1 * num2;
+}
+
+float
+sys_div(void){
+  int num1;
+  int num2;
+
+  argint(0, &num1);
+  argint(1, &num2);
+
+  return num1 * 1.0 / num2;
+}
+
+int
+sys_mod(void){
+  int num1;
+  int num2;
+  int sign = 1;
+
+  argint(0, &num1);
+  argint(1, &num2);
+
+  // if(num1 < 0){
+  //   sign = -1;
+  // }
+
+  return sign * (num1 % num2);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

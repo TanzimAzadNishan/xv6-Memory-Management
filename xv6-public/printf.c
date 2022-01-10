@@ -74,7 +74,6 @@ printfloat(int fd, const char *fmt, float value)
         printint(fd, afterDecimal, 10, 1);
       }
       else {
-        // Unknown % sequence.  Print it to draw attention.
         putc(fd, '%');
         putc(fd, c);
       }

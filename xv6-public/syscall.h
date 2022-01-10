@@ -28,3 +28,6 @@
 #define SYS_substr 27
 #define SYS_sort 28
 #define SYS_getreadcount 29
+#define SYS_mult 30
+#define SYS_div 31
+#define SYS_mod 32

@@ -33,6 +33,9 @@ float addMultiple(struct multipleNum*);
 char* substr(char*, int, int);
 int* sort(struct mystat*);
 int getreadcount(void);
+int mult(int, int);
+float div(int, int);
+int mod(int, int);
 
 // ulib.c
 int stat(const char*, struct stat*);

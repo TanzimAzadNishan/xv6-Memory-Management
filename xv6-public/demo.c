@@ -58,11 +58,13 @@ int main(int argc, char *argv[]){
 
 
     //A1 online
-    //int temp = 0;
-    //int rc = getreadcount();
-    //temp = rc;
     printf(1, "count: %d\n", getreadcount());
     exit();
+
+
+    // test struct
+
+
 
 
     /*int fd;

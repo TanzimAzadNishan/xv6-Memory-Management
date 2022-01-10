@@ -113,6 +113,9 @@ extern int sys_addMultiple(void);
 extern int sys_substr(void);
 extern int sys_sort(void);
 extern int sys_getreadcount(void);
+extern int sys_mult(void);
+extern int sys_div(void);
+extern int sys_mod(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -144,6 +147,9 @@ static int (*syscalls[])(void) = {
 [SYS_substr] sys_substr,
 [SYS_sort] sys_sort,
 [SYS_getreadcount] sys_getreadcount,
+[SYS_mult] sys_mult,
+[SYS_div] sys_div,
+[SYS_mod] sys_mod,
 };
 
 void
