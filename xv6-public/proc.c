@@ -98,6 +98,32 @@ found:
   }
   sp = p->kstack + KSTACKSIZE;
 
+
+  /*------------------------- my changes starts -----------------------------*/
+
+  p->noOfPhysicalPages = 0;
+  p->noOfSwapFilePages = 0;
+  p->noOfPageFaults = 0;
+  p->fifoHead = 0;
+  p->fifoTail = 0;
+  p->usedAlgorithm = FIFO;
+  //p->usedAlgorithm = NRU;
+  p->nruIndex = -1;
+
+  // checking if the curproc is not init(1) or sh(2). 
+  if(p->pid > 2){
+      createSwapFile(p);
+
+      for (int i=0; i < MAX_SWAPFILE_PAGES; i++){
+        p->swapFilePages[i] = -1;
+      }
+      for(int i = 0; i < MAX_PSYC_PAGES; i++){
+        p->physicalPages[i] = -1;
+      }
+  }
+
+  /*------------------------- my changes ends -----------------------------*/
+
   // Leave room for trap frame.
   sp -= sizeof *p->tf;
   p->tf = (struct trapframe*)sp;
@@ -162,6 +188,7 @@ growproc(int n)
   struct proc *curproc = myproc();
 
   sz = curproc->sz;
+
   if(n > 0){
     if((sz = allocuvm(curproc->pgdir, sz, sz + n)) == 0)
       return -1;
@@ -188,18 +215,42 @@ fork(void)
   if((np = allocproc()) == 0){
     return -1;
   }
-
+  
   // Copy process state from proc.
   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
-    kfree(np->kstack);
-    np->kstack = 0;
-    np->state = UNUSED;
-    return -1;
+      kfree(np->kstack);
+      np->kstack = 0;
+      np->state = UNUSED;
+      return -1;
   }
   np->sz = curproc->sz;
+
+  /*------------------------- my changes starts -----------------------------*/
+
+  // checking if the curproc is not init(1) or sh(2)
+  if(curproc->pid > 2){ 
+    // as swapFile is not copied, we have to copy it manually
+    copyContentsOfSwapFile(curproc, np);
+
+    for (int i = 0; i < MAX_PSYC_PAGES; i++){
+      np->physicalPages[i] = curproc->physicalPages[i];
+    }
+
+    for (int i = 0; i < MAX_SWAPFILE_PAGES; i++){
+      np->swapFilePages[i] = curproc->swapFilePages[i];
+    }
+
+    np->noOfPhysicalPages = curproc->noOfPhysicalPages;
+    np->noOfSwapFilePages = curproc->noOfSwapFilePages;
+    np->noOfPageFaults = curproc->noOfPageFaults;
+    np->usedAlgorithm = curproc->usedAlgorithm;
+    np->nruIndex = curproc->nruIndex;    
+  }
+
+  /*------------------------- my changes ends -----------------------------*/
+
   np->parent = curproc;
   *np->tf = *curproc->tf;
-
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -217,7 +268,6 @@ fork(void)
   np->state = RUNNABLE;
 
   release(&ptable.lock);
-
   return pid;
 }
 
@@ -233,6 +283,28 @@ exit(void)
 
   if(curproc == initproc)
     panic("init exiting");
+
+
+  /*------------------------- my changes starts -----------------------------*/
+
+  // checking if the curproc is not init(1) or sh(2)
+  if(curproc->pid > 2){
+    if(removeSwapFile(curproc) != 0){
+      panic("exit: removeSwapFile(error)");
+    }
+
+    curproc->sz = 0;
+    curproc->noOfPhysicalPages = 0;
+    curproc->noOfSwapFilePages = 0;
+    curproc->noOfPageFaults = 0;
+    curproc->fifoHead = 0;
+    curproc->fifoTail = 0;
+    
+    removeInfoOfAllPages(curproc);
+  }
+
+  /*------------------------- my changes ends -----------------------------*/
+
 
   // Close all open files.
   for(fd = 0; fd < NOFILE; fd++){
@@ -295,6 +367,25 @@ wait(void)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+        /*------------------------- my changes starts -----------------------------*/
+
+        // if(curproc != 0 && curproc->pid > 2){
+        //   if(removeSwapFile(curproc) != 0){
+        //     panic("exit: removeSwapFile(error)");
+        //   }
+
+        //   for (int i = 0; i < MAX_PSYC_PAGES; i++){
+        //     p->physicalPages[i] = -2;
+        //   }
+
+        //   for (int i = 0; i < MAX_SWAPFILE_PAGES; i++){
+        //     p->swapFilePages[i] = -2;
+        //   }
+        // }
+
+        /*------------------------- my changes ends -----------------------------*/
+
         release(&ptable.lock);
         return pid;
       }
@@ -496,6 +587,83 @@ kill(int pid)
   return -1;
 }
 
+
+/*------------------------- my changes starts -----------------------------*/
+
+void printProcessDetails(struct proc *p){
+
+    int pde_cnt = 1;
+    int pte_cnt = 1;
+
+    cprintf("\nPage tables:\n");
+    //cprintf("size: %d\n", p->sz);
+    int noOfPages = p->sz / PGSIZE;
+    //cprintf("Number of pages: %d\n", noOfPages);
+
+    uint curVAddr = 0;
+    pde_t *pde = 0;
+    pte_t *pgtab = 0;    
+
+    for(int i = 0; i < noOfPages; i++){
+
+      if(i % 1024 == 0){
+        uint dirIdx = PDX(curVAddr);
+        pde = &p->pgdir[dirIdx];
+
+        if(!(*pde & PTE_U)){
+          pde_cnt++;
+          continue;
+        }
+
+        // uint pde_ppn = PTE_ADDR(*pde);
+
+        uint pde_ppn = *pde >> PTXSHIFT;
+        cprintf("\nmemory location of page directory = %x\n", p->pgdir);
+        cprintf("pdir PTE %d, %d\n", pde_cnt, pde_ppn);
+        pde_cnt++;
+        cprintf("\n");       
+      }
+
+      pgtab = (pte_t*)P2V(PTE_ADDR(*pde));
+      if(i % 1024 == 0){
+        cprintf("memory location of page table = %x\n", V2P(pgtab));
+      } 
+
+      uint pteIdx = PTX(curVAddr);
+      pgtab = &pgtab[pteIdx];
+
+      if(!(*pgtab & PTE_U) || (*pgtab & PTE_PG)){
+        curVAddr += PGSIZE;
+        pte_cnt++;
+        continue;
+      }
+
+      //uint pte_ppn = PTE_ADDR(*pgtab);
+      uint pte_ppn = *pgtab >> PTXSHIFT;
+      uint physicalAddr = (pte_ppn << PTXSHIFT) | (curVAddr & 0xFFF);
+
+      //uint physicalAddr2 = PTE_ADDR(*pgtab);
+
+      // if((int) pte_ppn == 0){
+      //   curVAddr += PGSIZE;
+      //   pte_cnt++;        
+      //   continue;
+      // }
+
+      cprintf("ptbl PTE %d, %d, %x\n", pte_cnt++, pte_ppn, physicalAddr);
+      curVAddr += PGSIZE;
+
+      cprintf("Page Mapping:\n");
+      cprintf("%d -> %d\n", i+1, pte_ppn);
+      
+    }
+
+    //printProcPages(p);
+}
+
+/*------------------------- my changes ends -----------------------------*/
+
+
 //PAGEBREAK: 36
 // Print a process listing to console.  For debugging.
 // Runs when user types ^P on console.
@@ -516,6 +684,8 @@ procdump(void)
   char *state;
   uint pc[10];
 
+  int process_cnt = 1;
+
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
     if(p->state == UNUSED)
       continue;
@@ -523,6 +693,9 @@ procdump(void)
       state = states[p->state];
     else
       state = "???";
+
+    cprintf("Process %d\n", process_cnt);
+    
     cprintf("%d %s %s", p->pid, state, p->name);
     if(p->state == SLEEPING){
       getcallerpcs((uint*)p->context->ebp+2, pc);
@@ -530,5 +703,28 @@ procdump(void)
         cprintf(" %p", pc[i]);
     }
     cprintf("\n");
+
+    /* ----------------------- page table information -------------------------- */
+
+    printProcessDetails(p);
+    cprintf("\n\n");
+    process_cnt++;
+
   }
 }
+
+/*------------------------- my changes starts -----------------------------*/
+
+void removeInfoOfAllPages(struct proc* p){
+  for (int i = 0; i < MAX_PSYC_PAGES; ++i) {
+		p->physicalPages[i] = -1;
+	}
+
+	for (int i = 0; i < MAX_SWAPFILE_PAGES; ++i) {
+		p->swapFilePages[i] = -1;
+	}
+}
+
+/*------------------------- my changes ends -----------------------------*/
+
+

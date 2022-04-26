@@ -52,6 +52,16 @@ struct inode*   nameiparent(char*, char*);
 int             readi(struct inode*, char*, uint, uint);
 void            stati(struct inode*, struct stat*);
 int             writei(struct inode*, char*, uint, uint);
+int             createSwapFile(struct proc* p);
+int             readFromSwapFile(struct proc * p, char* buffer, uint placeOnFile, uint size);
+int             writeToSwapFile(struct proc* p, char* buffer, uint placeOnFile, uint size);
+int             removeSwapFile(struct proc* p);
+void            copyContentsOfSwapFile(struct proc* parent, struct proc* child);
+int             nextFreePageIndexInSwapFile(struct proc *p);
+int             fetchSwapPageToPhysicalPage(struct proc* p, int physicalPageIdx, uint vAddr, char* buffer);
+int             fetchPhysicalPageToSwapPage(struct proc* p, int physicalPageIdx, uint vAddr);
+int             getIndexOfPageInSwapFile(struct proc *p, uint vAddr);
+
 
 // ide.c
 void            ideinit(void);
@@ -120,9 +130,15 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+void            removeInfoOfAllPages(struct proc* p);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
+
+// sysfile
+struct inode*   create(char *path, short type, short major, short minor);
+int             isdirempty(struct inode *dp);
+
 
 // spinlock.c
 void            acquire(struct spinlock*);
@@ -185,6 +201,19 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+int             fifo_getIndexOfNewPhysicalPage(struct proc *p);
+int             insertPageToPhysicalMemory(struct proc *p, uint vAddr, bool isMemoryFull);
+void            removePageFromPhysicalMemory(struct proc *p, int index, bool isPageFault);
+void            updatePteFlags(struct proc* p, uint vAddr, uint pAddr, bool isPageout);
+int             getIndexOfPhysicalPage(struct proc *p, uint vAddr);
+void            pageOutToSwapFile(struct proc *p);
+bool            pageInToPhysicalMemory(struct proc *p, uint vAddr);
+bool            isPageWrittable(struct proc *p, void* vAddr);
+bool            isPageMovedToSwapFile(struct proc *p, void* vAddr);
+bool            updateWritePermission(struct proc *p, void* vAddr);
+int             nru_getIndexOfPageToBeSwappedOut(struct proc *p);
+void            printProcPages(struct proc *p);
+void            resetAccessBit(struct proc *p);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

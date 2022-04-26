@@ -1,7 +1,5 @@
 struct stat;
 struct rtcdate;
-struct multipleNum;
-struct mystat;
 
 // system calls
 int fork(void);
@@ -25,17 +23,10 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-int getprocesssize(void);
-int addtwonumbers(int, int);
-int addFloat(float*, float*);
-int shutdown(void);
-float addMultiple(struct multipleNum*);
-char* substr(char*, int, int);
-int* sort(struct mystat*);
-int getreadcount(void);
-int mult(int, int);
-float div(int, int);
-int mod(int, int);
+int pgdir(void);
+void procState(void);
+int processSize(void);
+int pageInfo(int);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -50,5 +41,3 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
-float atof(const char*);
-void printfloat(int, const char*, float);

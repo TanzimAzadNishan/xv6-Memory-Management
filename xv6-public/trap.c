@@ -51,6 +51,13 @@ trap(struct trapframe *tf)
     if(cpuid() == 0){
       acquire(&tickslock);
       ticks++;
+
+      /*------------------------- my changes starts -----------------------------*/
+      if(myproc() != 0 && myproc()->pid > 2 && myproc()->usedAlgorithm == NRU){
+          resetAccessBit(myproc());
+      }
+      /*------------------------- my changes ends -----------------------------*/
+
       wakeup(&ticks);
       release(&tickslock);
     }
@@ -77,6 +84,33 @@ trap(struct trapframe *tf)
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
     break;
+
+/*------------------------- my changes starts -----------------------------*/
+
+  // It is generated due to the attempts to write to a read-only page or attempts to access 
+  // kernel memory from userspace or accesses to unallocated memory.
+
+  case T_PGFLT: {
+	  if (myproc() != 0 && myproc()->pid > 2 && (tf->cs & 3) == 3){
+
+        void* va = (void*) rcr2();
+      
+        if(isPageMovedToSwapFile(myproc(), va)){
+            int physicalIndex = fifo_getIndexOfNewPhysicalPage(myproc());
+            if(physicalIndex == -1){
+              //cprintf("page out in trap\n");
+              pageOutToSwapFile(myproc());
+            }
+
+            if(pageInToPhysicalMemory(myproc(), PGROUNDDOWN(rcr2()))){
+                break;
+            }
+        }
+    }
+		//break;
+	}
+
+/*------------------------- my changes ends -----------------------------*/
 
   //PAGEBREAK: 13
   default:

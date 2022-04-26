@@ -32,6 +32,12 @@ struct context {
   uint eip;
 };
 
+
+// struct nru_page {
+//   int index; 
+//   int priority;
+// };
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -49,7 +55,24 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  int readid;
+  //Swap file. must initiate with create swap file
+  struct file *swapFile;			//page file
+
+  /*------------------------- my changes starts -----------------------------*/
+  uint swapFilePages[MAX_SWAPFILE_PAGES];
+  uint physicalPages[MAX_PSYC_PAGES];  // contains virtual address, -1 means freed, -2 means about to free
+
+  uint noOfPhysicalPages;
+  uint noOfSwapFilePages;
+  uint noOfPageFaults; 
+
+  int fifoHead;
+  int fifoTail;
+  int usedAlgorithm;
+  int nruIndex;  // the index from which page to be swapped out
+
+  /*------------------------- my changes ends -----------------------------*/
+
 };
 
 // Process memory is laid out contiguously, low addresses first:
