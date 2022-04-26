@@ -6,7 +6,6 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
-#include "stat.h"
 
 int
 sys_fork(void)
@@ -92,155 +91,82 @@ sys_uptime(void)
 }
 
 int
-sys_getprocesssize(void)
-{
+sys_pgdir(void){
+
+  for(int k = 0; k < 1023; k++){
+    if(myproc()->pgdir[k] & (PTE_U | PTE_P) /*&& !(myproc()->pgdir[k] & 1000000)*/){
+      cprintf("%d, %d\n", k, myproc()->pgdir[k]);
+    }
+  }
+
+  return 0;
+}
+
+/*------------------------- my changes starts -----------------------------*/
+
+void
+sys_procState(void){
+  struct proc *p = myproc();
+
+  cprintf("\n");
+  cprintf("pid=%d, sz=%d, name=%s, head=%d, tail=%d\n", p->pid, p->sz, p->name, p->fifoHead, p->fifoTail);
+  cprintf("noOfPhysicalPages=%d, noOfSwapFilePages=%d, noOfPageFaults=%d\n", p->noOfPhysicalPages, p->noOfSwapFilePages, p->noOfPageFaults);
+
+  cprintf("\n");
+
+  cprintf("physicalPages:\t");
+  for(int i = 0; i < MAX_PSYC_PAGES; i++){
+    cprintf(" %d", p->physicalPages[i]);
+  }
+  cprintf("\n");
+
+  cprintf("swapFilePages:\t");
+  for(int i = 0; i < MAX_SWAPFILE_PAGES; i++){
+    cprintf(" %d", p->swapFilePages[i]);
+  }
+  cprintf("\n\n");
+
+  //return p->sz;
+}
+
+int
+sys_processSize(void){
   return myproc()->sz;
 }
 
 int
-sys_addtwonumbers(void)
-{
-  int num1;
-  int num2;
+sys_pageInfo(void){
+  struct proc *p = myproc();
 
-  argint(0, &num1);
-  argint(1, &num2);
+  int num;
+  argint(0, &num);
 
-  return num1 + num2;
-}
+  p->noOfPhysicalPages = p->sz / 4096;
 
-int
-sys_addFloat(void)
-{
-  float* num1;
-  float* num2;
-
-  argptr(0, (void*)&num1, sizeof(*num1));
-  argptr(1, (void*)&num2, sizeof(*num2));
-
-  *num1 = ((*num1 * 1.0)  + (*num2 * 1.0)) * 1.0;
-
-  return 0;
-}
-
-int
-sys_shutdown(void){
-  outw(0xB004, 0x0|0x2000);
-  outw(0x604, 0x0|0x2000);
-
-  return 0;
-}
-
-float
-sys_addMultiple(void){
-  struct multipleNum* st;
-  argptr (0 , (void*)&st ,sizeof(*st));
-  float result = 0;
-
-  for(int i = 0; i < st->sz; i++){
-    result += st->numbers[i];
+  uint va = 0;
+  for(int i = 0; i < p->noOfPhysicalPages; i++){
+    p->physicalPages[i] = va;
+    va += PGSIZE;
   }
-  // st->result = result;
-
-  return result;
-}
-
-char*
-sys_substr(void){
-  char *str;
-  int start_idx , len;
-
-  argint(1 , &start_idx);
-  argint(2 , &len);
-  argstr(0 , &str);
-
-  char* s = &str[0];
-
-  int k = 0;
-  for(int i = start_idx ; i < start_idx+len ; i++){
-    s[k++] = str[i];
+  for(int i = p->noOfPhysicalPages; i < MAX_PSYC_PAGES; i++){
+      p->physicalPages[i] = -1;
   }
-  s[k]='\0';
-  return s;
-}
-
-int*
-sys_sort(void){
-  struct mystat *ct;
-  argptr (0 , (void*)&ct ,sizeof(*ct));
-  int n = ct->sz;
- 
-  int temp;
-   
-  for (int i = 0; i < n; i++)
-  {
-    for (int j = i + 1; j < n; j++)
-    {
-        if (ct->nums[i] > ct->nums[j])
-        {
-          temp = ct->nums[i];
-          ct->nums[i] = ct->nums[j];
-          ct->nums[j] = temp;
-        }
-    }
+  for(int i = 0; i < MAX_SWAPFILE_PAGES; i++){
+    p->swapFilePages[i] = -1;
   }
-  return ct->nums;
-}
+  p->fifoHead = 0;
+  p->fifoTail = p->noOfPhysicalPages;
 
-int
-sys_getreadcount(void)
-{
-  cprintf("in sys: %d\n", myproc()->readid);
-  return myproc()->readid;
-}
+  if(num == 1){
+    p->usedAlgorithm = FIFO;
+  }
+  else if(num == 2){
+    p->usedAlgorithm = NRU;
+  }
+  p->nruIndex = -1;
 
-int
-sys_mult(void){
-  int num1;
-  int num2;
-
-  argint(0, &num1);
-  argint(1, &num2);
-
-  return num1 * num2;
-}
-
-float
-sys_div(void){
-  int num1;
-  int num2;
-
-  argint(0, &num1);
-  argint(1, &num2);
-
-  return num1 * 1.0 / num2;
-}
-
-int
-sys_mod(void){
-  int num1;
-  int num2;
-  int sign = 1;
-
-  argint(0, &num1);
-  argint(1, &num2);
-
-  // if(num1 < 0){
-  //   sign = -1;
-  // }
-
-  return sign * (num1 % num2);
+  return p->sz;    
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
+/*------------------------- my changes ends -----------------------------*/

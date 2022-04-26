@@ -35,54 +35,6 @@ printint(int fd, int xx, int base, int sgn)
     putc(fd, buf[i]);
 }
 
-
-void
-printfloat(int fd, const char *fmt, float value)
-{
-  int c, i, state;
-  int sign = 0;
-
-  if(value < 0){
-    sign = 1;
-    value = -value;
-  }
-
-  int beforeDecimal = (int) (value);
-  int afterDecimal;
-
-  afterDecimal = (int)(value*100 + 0.01) - beforeDecimal*100;
-
-  state = 0;
-
-  for(i = 0; fmt[i]; i++){
-    c = fmt[i] & 0xff;
-    if(state == 0){
-      if(c == '%'){
-        state = '%';
-      } else {
-        putc(fd, c);
-      }
-    }
-    else if(state == '%'){
-      if(c == 'f'){
-        if(sign == 1){
-          putc(fd, '-');
-        }
-
-        printint(fd, beforeDecimal, 10, 1);
-        putc(fd, '.');
-        printint(fd, afterDecimal, 10, 1);
-      }
-      else {
-        putc(fd, '%');
-        putc(fd, c);
-      }
-      state = 0;
-    }
-  }
-}
-
-
 // Print to the given fd. Only understands %d, %x, %p, %s.
 void
 printf(int fd, const char *fmt, ...)
@@ -120,7 +72,7 @@ printf(int fd, const char *fmt, ...)
       } else if(c == 'c'){
         putc(fd, *ap);
         ap++;
-      }else if(c == '%'){
+      } else if(c == '%'){
         putc(fd, c);
       } else {
         // Unknown % sequence.  Print it to draw attention.

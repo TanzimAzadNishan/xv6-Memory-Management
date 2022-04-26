@@ -1,7 +1,7 @@
 {
     "files.associations": {
-        "stat.h": "c",
-        "user.h": "c",
-        "cstdio": "c"
+        "file.h": "c",
+        "traps.h": "c",
+        "spinlock.h": "c"
     }
 }

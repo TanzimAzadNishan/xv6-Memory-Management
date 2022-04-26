@@ -7,8 +7,6 @@
 #include "x86.h"
 #include "syscall.h"
 
-int readcount = 0;
-
 // User code makes a system call with INT T_SYSCALL.
 // System call number in %eax.
 // Arguments on the stack, from the user call to the C
@@ -105,17 +103,10 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-extern int sys_getprocesssize(void);
-extern int sys_addtwonumbers(void);
-extern int sys_addFloat(void);
-extern int sys_shutdown(void);
-extern int sys_addMultiple(void);
-extern int sys_substr(void);
-extern int sys_sort(void);
-extern int sys_getreadcount(void);
-extern int sys_mult(void);
-extern int sys_div(void);
-extern int sys_mod(void);
+extern int sys_pgdir(void);
+extern int sys_procState(void);
+extern int sys_processSize(void);
+extern int sys_pageInfo(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -139,17 +130,10 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
-[SYS_getprocesssize] sys_getprocesssize,
-[SYS_addtwonumbers] sys_addtwonumbers,
-[SYS_addFloat] sys_addFloat,
-[SYS_shutdown] sys_shutdown,
-[SYS_addMultiple] sys_addMultiple,
-[SYS_substr] sys_substr,
-[SYS_sort] sys_sort,
-[SYS_getreadcount] sys_getreadcount,
-[SYS_mult] sys_mult,
-[SYS_div] sys_div,
-[SYS_mod] sys_mod,
+[SYS_pgdir]   sys_pgdir,
+[SYS_procState] sys_procState,
+[SYS_processSize] sys_processSize,
+[SYS_pageInfo] sys_pageInfo,
 };
 
 void
@@ -159,14 +143,6 @@ syscall(void)
   struct proc *curproc = myproc();
 
   num = curproc->tf->eax;
-
-  if (num==SYS_read){
-    readcount++; //my change
-  }
-  if (num==SYS_getreadcount){
-    curproc->readid = readcount; //my change
-  }
-
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
   } else {

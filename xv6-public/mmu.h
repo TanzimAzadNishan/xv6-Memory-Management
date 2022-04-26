@@ -84,6 +84,16 @@ struct segdesc {
 #define NPTENTRIES      1024    // # PTEs per page table
 #define PGSIZE          4096    // bytes mapped by a page
 
+
+/*------------------------- my changes starts -----------------------------*/
+#define MAX_PSYC_PAGES 15
+#define MAX_TOTAL_PAGES 30
+#define MAX_SWAPFILE_PAGES (MAX_TOTAL_PAGES - MAX_PSYC_PAGES)
+#define FIFO 1
+#define NRU 2
+/*------------------------- my changes ends -----------------------------*/
+
+
 #define PTXSHIFT        12      // offset of PTX in a linear address
 #define PDXSHIFT        22      // offset of PDX in a linear address
 
@@ -95,6 +105,9 @@ struct segdesc {
 #define PTE_W           0x002   // Writeable
 #define PTE_U           0x004   // User
 #define PTE_PS          0x080   // Page Size
+#define PTE_A           0x020   // Accessed
+#define PTE_PG          0x200   // Paged out to secondary storage
+#define PTE_D           0x040   // Dirty bit to check if modified or not 
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)

@@ -10,6 +10,7 @@
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
+
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -200,6 +201,8 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
   uint i, pa, n;
   pte_t *pte;
 
+  //cprintf("loaduvm: %d\n", sz);
+
   if((uint) addr % PGSIZE != 0)
     panic("loaduvm: addr must be page aligned");
   for(i = 0; i < sz; i += PGSIZE){
@@ -224,13 +227,39 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   char *mem;
   uint a;
 
-  if(newsz >= KERNBASE)
+  //cprintf("here %d %d, %d\n", myproc()->pid, oldsz, newsz);
+
+  if(newsz >= KERNBASE){
     return 0;
-  if(newsz < oldsz)
+  }
+
+  if(newsz < oldsz){
     return oldsz;
+  }
+
+  /*------------------------- my changes starts -----------------------------*/
+
+  // checking if the curproc is not init(1) or sh(2)
+  int newNoOfPages = PGROUNDUP(newsz) / PGSIZE;
+  if(myproc()->pid > 2 && newNoOfPages > MAX_TOTAL_PAGES){
+    return 0;
+  }
+
+  /*------------------------- my changes ends -----------------------------*/
 
   a = PGROUNDUP(oldsz);
   for(; a < newsz; a += PGSIZE){
+
+     /*------------------------- my changes starts -----------------------------*/
+
+    if(myproc() && myproc()->pid > 2 && myproc()->noOfPhysicalPages == MAX_PSYC_PAGES && 
+          (a == PGROUNDUP(oldsz) ||(int) myproc()->physicalPages[myproc()->fifoHead] == 0)){
+
+        goto skipAllocation;
+    }
+
+    /*------------------------- my changes ends -----------------------------*/
+
     mem = kalloc();
     if(mem == 0){
       cprintf("allocuvm out of memory\n");
@@ -244,6 +273,37 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
       kfree(mem);
       return 0;
     }
+
+    /*------------------------- my changes starts -----------------------------*/
+
+skipAllocation:
+    // checking if the curproc is not init(1) or sh(2)
+    if (myproc() && myproc()->pid > 2){
+      
+      if(myproc()->noOfPhysicalPages < MAX_PSYC_PAGES){
+          if(insertPageToPhysicalMemory(myproc(), a, false) == -1){
+            cprintf("allocuvm: %d/n", a);
+            goto skipAllocation;
+          }
+      }
+	    
+	    else {
+        pageOutToSwapFile(myproc());
+        if(a == PGROUNDUP(oldsz) || (myproc()->usedAlgorithm == FIFO && 
+            (int) myproc()->physicalPages[myproc()->fifoHead - 1] == 0)){
+
+          cprintf("continue\n");
+          a -= 4096;
+          continue;
+        }
+
+        insertPageToPhysicalMemory(myproc(), a, true);
+      }
+
+    }
+
+    /*------------------------- my changes ends -----------------------------*/
+
   }
   return newsz;
 }
@@ -261,6 +321,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
   if(newsz >= oldsz)
     return oldsz;
 
+
   a = PGROUNDUP(newsz);
   for(; a  < oldsz; a += PGSIZE){
     pte = walkpgdir(pgdir, (char*)a, 0);
@@ -272,6 +333,21 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
         panic("kfree");
       char *v = P2V(pa);
       kfree(v);
+
+      /*------------------------- my changes starts -----------------------------*/
+
+      // checking if the curproc is not init(1) or sh(2)
+      if (myproc() && myproc()->pid > 2){
+        
+        for (int i = 0; i < MAX_PSYC_PAGES; i++){
+          if(myproc()->physicalPages[i] == a){
+            removePageFromPhysicalMemory(myproc(), i, false);
+          }
+        }
+      }
+
+      /*------------------------- my changes ends -----------------------------*/
+
       *pte = 0;
     }
   }
@@ -322,11 +398,29 @@ copyuvm(pde_t *pgdir, uint sz)
 
   if((d = setupkvm()) == 0)
     return 0;
+  
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
-    if(!(*pte & PTE_P))
+
+    /*------------------------- my changes starts -----------------------------*/
+    if (*pte & PTE_PG){
+      // means the page is paged out. so continue
+      // updatePteFlags(myproc(), i, -1, false);
+
+      goto mapPte;
+    }
+
+    if(!(*pte & PTE_P)){
+      cprintf("i=%d\n", i);
+      //cprintf("U=%d\n", (*pte & PTE_U));
+
       panic("copyuvm: page not present");
+    }
+
+    /*------------------------- my changes ends -----------------------------*/ 
+
+mapPte:
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
@@ -392,3 +486,311 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+
+
+/*------------------------- my changes starts -----------------------------*/
+
+int fifo_getIndexOfNewPhysicalPage(struct proc *p){
+    if(p->noOfPhysicalPages == MAX_PSYC_PAGES){
+      return - 1;
+    }
+
+    return p->fifoTail;
+}
+
+
+int insertPageToPhysicalMemory(struct proc *p, uint vAddr, bool isMemoryFull){
+  int index = -1;
+
+  if((isMemoryFull == true && p->usedAlgorithm == NRU) || p->nruIndex != -1){
+    index = p->nruIndex;
+  }
+  else{
+    index = fifo_getIndexOfNewPhysicalPage(p);
+  }
+
+  if(index == -1){
+      cprintf("insert index -1 failed\n");
+      return -1;
+  }
+  p->noOfPhysicalPages++;
+  p->physicalPages[index] = vAddr;
+
+  if(isMemoryFull == false || p->usedAlgorithm == FIFO){
+    p->fifoTail = (p->fifoHead + p->noOfPhysicalPages) % MAX_PSYC_PAGES;
+
+    if(p->noOfPhysicalPages == MAX_PSYC_PAGES && (int) p->physicalPages[p->fifoHead] == 0){
+
+        p->fifoHead = (p->fifoHead + 1) % MAX_PSYC_PAGES;
+        p->fifoTail = (p->fifoHead + p->noOfPhysicalPages) % MAX_PSYC_PAGES;
+    }    
+  }
+
+  //if(p->usedAlgorithm == NRU){
+    printProcPages(myproc());
+  //}
+
+  p->nruIndex = -1;
+
+  return 0;
+}
+
+void removePageFromPhysicalMemory(struct proc *p, int index, bool isMemoryFull){
+    p->noOfPhysicalPages--;
+    p->physicalPages[index] = -2;
+
+    //p->fifoTail = (p->fifoHead + p->noOfPhysicalPages) % MAX_PSYC_PAGES;
+
+    if(p->usedAlgorithm == FIFO || isMemoryFull == false){
+        p->fifoHead = (p->fifoHead + 1) % MAX_PSYC_PAGES;
+    }
+}
+
+
+void updatePteFlags(struct proc* p, uint vAddr, uint pAddr, bool isPageout){
+    pte_t *pte = walkpgdir(p->pgdir, (char*)vAddr, 0);
+
+    if(pte){
+      if(isPageout){
+          *pte = *pte & ~PTE_P;
+          *pte = *pte | PTE_PG;
+
+          // clear the ppn of pte
+          *pte = *pte & PTE_FLAGS(*pte);
+      }
+
+      else{
+          *pte = *pte | (PTE_P | PTE_U | PTE_W);
+          *pte = *pte & ~PTE_PG;
+
+          // store physicalAddr as ppn
+          *pte = *pte | pAddr;
+      }
+
+      //To refresh the TLB, refresh the rc3 register.
+      lcr3(V2P(p->pgdir));
+    } 
+}
+
+int getIndexOfPhysicalPage(struct proc *p, uint vAddr){
+    for(int i = 0; i < MAX_PSYC_PAGES; i++){
+        if(p->physicalPages[i] == vAddr){
+            return i;
+        }
+    }
+    return -1;
+}
+
+
+void pageOutToSwapFile(struct proc *p){
+    int physicalPageIndex = -1;
+
+calcIndex:
+    if(p->usedAlgorithm == NRU){
+        physicalPageIndex = nru_getIndexOfPageToBeSwappedOut(p);
+    }
+    else{
+        physicalPageIndex = p->fifoHead;
+    }
+
+    cprintf("page out: index = %d, %d\n", physicalPageIndex, p->physicalPages[physicalPageIndex]);
+
+    pte_t *pte = walkpgdir(p->pgdir, (char*)p->physicalPages[physicalPageIndex], 0);
+    uint pAddr = PTE_ADDR(*pte);
+
+    if(!(*pte & PTE_P) || !(*pte & PTE_U)){
+        cprintf("pid=%d, present bit=%d, user bit=%d\n", p->pid, (*pte & PTE_P), (*pte & PTE_U));
+        if(p->usedAlgorithm == FIFO){
+            p->fifoHead = (p->fifoHead + 1) % MAX_PSYC_PAGES;
+            p->fifoTail = (p->fifoHead + p->noOfPhysicalPages) % MAX_PSYC_PAGES;            
+        
+            goto calcIndex;
+        }
+    }
+
+    // cprintf("present bit=%d, user bit=%d\n", (*pte & PTE_P), (*pte & PTE_U));
+
+    // write the contents in swapfile and update swapFiles[i], physicalPages[i]
+    int fetched = fetchPhysicalPageToSwapPage(p, physicalPageIndex, p->physicalPages[physicalPageIndex]);
+
+    if(fetched == -1){
+      cprintf("page out: Fetching failed\n");
+    }
+
+    // free physical memory
+    char *va = (char*) P2V(pAddr);
+    kfree(va);
+
+    // update pte flags
+    updatePteFlags(p, p->physicalPages[physicalPageIndex], -1, true);
+
+    // remove physical pages
+    removePageFromPhysicalMemory(p, physicalPageIndex, true);
+}
+
+
+bool pageInToPhysicalMemory(struct proc *p, uint vAddr){
+    // page fault
+    p->noOfPageFaults++;
+
+    // get physical page index
+    int physicalIndex = -1;
+
+    if(p->usedAlgorithm == FIFO){
+        physicalIndex = fifo_getIndexOfNewPhysicalPage(p);
+    }
+    else if(p->usedAlgorithm == NRU){
+        physicalIndex = p->nruIndex;
+    }
+
+    cprintf("from trap: %d, %d\n", vAddr, physicalIndex);
+
+    // fetch page from swap file and update swapFiles[i]
+    char buffer[PGSIZE];
+    int fetched = fetchSwapPageToPhysicalPage(p, physicalIndex, vAddr, buffer);
+
+    if(fetched == -1){
+      cprintf("Fetching failed\n");
+    }
+
+    // kalloc returns virtual address.
+    char* newMemory = kalloc();
+
+    // copy page contents to physical location
+    memmove(newMemory, buffer, PGSIZE);  
+
+    // update pte flags
+    uint pAddr = V2P(newMemory);
+    updatePteFlags(p, vAddr, pAddr, false);
+
+    // insert page and update physicalPages[i]
+    int isInserted = insertPageToPhysicalMemory(p, vAddr, true);
+    if(isInserted == -1){
+      cprintf("invalid: size = %d, va = %d\n", p->noOfPhysicalPages, vAddr);
+      return false;
+    } 
+
+    return true;            
+}
+
+
+bool isPageWrittable(struct proc *p, void* vAddr){
+    pte_t* pte = walkpgdir(p->pgdir, vAddr, 0);
+
+    if(pte){
+        if(*pte & PTE_W){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool updateWritePermission(struct proc *p, void* vAddr){
+    pte_t* pte = walkpgdir(p->pgdir, vAddr, 0);
+
+    if(pte){
+        *pte = *pte | PTE_W;
+        return true;
+    }
+    return false;
+}
+
+bool isPageMovedToSwapFile(struct proc *p, void* vAddr){
+    pte_t* pte = walkpgdir(p->pgdir, vAddr, 0);
+
+    if(pte){
+        if(*pte & PTE_PG){
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int nru_getIndexOfPageToBeSwappedOut(struct proc *p){
+    int index = -1;
+    int priority = 3;    
+
+    for(int i = 0; i < MAX_PSYC_PAGES; i++){
+      uint vAddr = p->physicalPages[i];
+      pte_t* pte = walkpgdir(p->pgdir, (char*)vAddr, 0);
+
+      if(!(*pte & PTE_U)){
+        continue;
+      }
+
+      int isModified = 0;
+      int isReferenced = 0;
+
+      if((int) (*pte & PTE_A) != 0){
+        isReferenced = 1;
+      }
+      if((int) (*pte & PTE_D) != 0){
+        isModified = 1;
+      }
+
+      if(isReferenced == 0 && isModified == 0){
+          //cprintf("----------------- 0   0   0    0 ------------------------ \n");
+          index = i;
+          priority = 0;
+          //cprintf("break from for loop %d\n", i);
+          break;
+      }
+      else if(isReferenced == 0 && isModified == 1){
+          if(priority > 1){
+              //cprintf("----------------- 1    1   1   1   1 ------------------------ \n");
+              index = i;
+              priority = 1;
+          }
+      }
+      else if(isReferenced == 1 && isModified == 0){
+          if(priority > 2){
+              //cprintf("----------------- 2   2   2    2 ------------------------ \n");
+              index = i;
+              priority = 2;
+          }
+      }
+      else{
+          if(priority == 3 && index == -1){
+              //cprintf("----------------- 3   3   3    3 ------------------------ \n");
+              index = i;
+          }
+      }
+    }
+
+    p->nruIndex = index;
+    //cprintf("nru index=%d, priority=%d, va=%d\n", index, priority, p->physicalPages[index]);
+
+    return index;
+}
+
+void printProcPages(struct proc *p){
+
+    cprintf("\nphysicalPages:\t");
+    for(int i = 0; i < MAX_PSYC_PAGES; i++){
+      cprintf(" %d", p->physicalPages[i]);
+    }
+    cprintf("\n");
+    cprintf("swapFilePages:\t");
+    for(int i = 0; i < MAX_SWAPFILE_PAGES; i++){
+      cprintf(" %d", p->swapFilePages[i]);
+    }
+    cprintf("\n");
+    cprintf("pid=%d, sz=%d, name=%s, head=%d, tail=%d\n", p->pid, p->sz, p->name, p->fifoHead, p->fifoTail);
+    cprintf("noOfPhysicalPages=%d, noOfSwapFilePages=%d, noOfPageFaults=%d\n", p->noOfPhysicalPages, p->noOfSwapFilePages, p->noOfPageFaults);
+    cprintf("\n");
+}
+
+void resetAccessBit(struct proc *p){
+    for(int i = 0; i < p->sz; i+= 4096){
+        pte_t* pte = walkpgdir(p->pgdir, (char*)i, 0);
+
+        if(pte){
+            *pte = *pte & ~PTE_A;
+        }
+    }
+}
+
+
+/*------------------------- my changes ends -----------------------------*/
