@@ -60,10 +60,8 @@ Step 1:
 > sudo apt-get install qemu-system-i386
 <br />
 Step 2: Go to the ***xv6-memory-management*** folder. 
-<br />
 Step 3: compile the project
 > make
-<br />
 
 ### **Run Qemu**
 Compile and run the emulator qemu
