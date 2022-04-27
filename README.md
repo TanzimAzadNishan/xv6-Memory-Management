@@ -58,7 +58,7 @@ First, clone the repository.<br />
 ### **Install Qemu on Ubuntu**
 Step 1:
 > sudo apt-get install qemu-system-i386
-<br />
+
 Step 2: Go to the ***xv6-memory-management*** folder. 
 Step 3: compile the project
 > make
