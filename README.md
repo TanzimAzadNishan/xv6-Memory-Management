@@ -61,7 +61,7 @@ Step 2: Go to the ***xv6-memory-management*** folder. <br /><br />
 Step 3: compile the project
 > make
 
-<br /><br />
+<br />
 ### **Run Qemu**
 Compile and run the emulator qemu
 > make qemu-nox
