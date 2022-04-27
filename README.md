@@ -59,7 +59,8 @@ First, clone the repository.<br />
 Step 1:
 > sudo apt-get install qemu-system-i386
 <br />
-Step 2: Go to the ***xv6-memory-management*** folder. <br /><br />
+Step 2: Go to the ***xv6-memory-management*** folder. 
+<br />
 Step 3: compile the project
 > make
 <br />
