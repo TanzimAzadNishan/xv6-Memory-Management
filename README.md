@@ -48,7 +48,7 @@ When a page fault has occurred, a trap to the kernel has been made. Then the os 
 ### **Page Replacement Algorithms**
 There are many page replacement algorithms. In this project, **FIFO(First in First out)** & **NRU(Not recently used)** has been implemented.
 
-
+<br /><br />
 ## **Run the Project**
 
 First, clone the repository.<br />
