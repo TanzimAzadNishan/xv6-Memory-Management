@@ -50,6 +50,32 @@ When a page fault has occurred, a trap to the kernel has been made. Then the os 
 There are many page replacement algorithms. In this project, **FIFO(First in First out)** & **NRU(Not recently used)** has been implemented.
 
 
+## **Run the Project**
+
+First, clone the repository.
+
+### **Install Qemu on Ubuntu**
+Step 1:
+> sudo apt-get install qemu-system-i386
+
+Step 2: Go to the ***xv6-memory-management*** folder.
+Step 3: compile the project
+> make
+
+
+### **Run Qemu**
+Compile and run the emulator qemu
+> make qemu-nox
+
+
+
+## **Developers**
+#### [Md. Tanzim Azad](https://github.com/TanzimAzadNishan)
+
+
+
+
+
 
 
 
