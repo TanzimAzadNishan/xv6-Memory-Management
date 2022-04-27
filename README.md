@@ -5,8 +5,9 @@ Paging Framework & Memory management related functionalities are implemented.<br
 ## **Project Overview**
 
 This project has enhanced the memory management system of xv6. The following tasks are implemented-
-    1) Updating the process details viewer
-    2) Developing a paging framework of xv6<br /><br />
+1) Updating the process details viewer
+2) Developing a paging framework of xv6
+<br /><br />
 
 
 
@@ -27,10 +28,11 @@ Page mappings - <virtual page number → physical page number>
 An important feature lacking in xv6 is the ability to swap out pages to a backing store. That is, at each moment in time all processes are held within the physical memory.
 
 Paging Framework takes care of this. It can take out pages and store them to disk. Also, the framework will retrieve pages back to the memory on demand. Each process is responsible for paging in and out its own pages. This framework consists of the following things-
-    1) File Framework
-    2) Storing pages in a swap file
-    3) Retrieving pages from a swap file
-    4) Page Replacement Algorithms<br /><br />
+1) File Framework
+2) Storing pages in a swap file
+3) Retrieving pages from a swap file
+4) Page Replacement Algorithms
+<br /><br />
 
 
 ### **File Framework**
