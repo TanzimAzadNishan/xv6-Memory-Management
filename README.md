@@ -57,12 +57,12 @@ First, clone the repository.
 ### **Install Qemu on Ubuntu**
 Step 1:
 > sudo apt-get install qemu-system-i386
-
-Step 2: Go to the ***xv6-memory-management*** folder. <br />
+<br />
+Step 2: Go to the ***xv6-memory-management*** folder. <br /><br />
 Step 3: compile the project
 > make
 
-
+<br /><br />
 ### **Run Qemu**
 Compile and run the emulator qemu
 > make qemu-nox
