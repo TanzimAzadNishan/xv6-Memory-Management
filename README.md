@@ -1,8 +1,7 @@
 # xv6-Memory-Management
-Paging Framework & Memory management related functionalities are implemented.<br />
+Paging Framework & Memory management related functionalities are implemented.<br /><br />
 
 
-<br /><br />
 ## **Project Overview**
 
 This project has enhanced the memory management system of xv6. The following tasks are implemented-
@@ -23,7 +22,6 @@ Page mappings - <virtual page number → physical page number>
 ```
 
 
-<br /><br />
 ### **Paging Framework**
 
 An important feature lacking in xv6 is the ability to swap out pages to a backing store. That is, at each moment in time all processes are held within the physical memory.
